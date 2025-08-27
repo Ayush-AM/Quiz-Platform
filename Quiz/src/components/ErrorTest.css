@@ -1,0 +1,84 @@
+.error-test-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.error-test-container h1 {
+  color: #333;
+  margin-bottom: 1.5rem;
+  font-size: 2.2rem;
+}
+
+.test-description {
+  margin-bottom: 2rem;
+  color: #555;
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.buggy-component {
+  padding: 2rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.buggy-component:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
+.buggy-component h2 {
+  color: #444;
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+}
+
+.trigger-error-button {
+  background-color: #ff5252;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 30px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 1.5rem;
+  box-shadow: 0 4px 6px rgba(255, 82, 82, 0.2);
+}
+
+.trigger-error-button:hover {
+  background-color: #ff3838;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(255, 82, 82, 0.3);
+}
+
+.trigger-error-button:active {
+  transform: translateY(1px);
+}
+
+@media (max-width: 768px) {
+  .error-test-container {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
+  .error-test-container h1 {
+    font-size: 1.8rem;
+  }
+  
+  .buggy-component {
+    padding: 1.5rem;
+  }
+  
+  .trigger-error-button {
+    padding: 10px 20px;
+  }
+}

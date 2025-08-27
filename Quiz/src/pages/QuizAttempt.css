@@ -33,11 +33,19 @@
 .timer-warning {
   color: #ed8936;
   animation: pulse 1s infinite;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: rgba(237, 137, 54, 0.1);
+  border-left: 3px solid #ed8936;
 }
 
 .timer-danger {
   color: #e53e3e;
   animation: pulse 0.5s infinite;
+  padding: 0.5rem;
+  border-radius: 8px;
+  background: rgba(229, 62, 62, 0.1);
+  border-left: 3px solid #e53e3e;
 }
 
 @keyframes pulse {

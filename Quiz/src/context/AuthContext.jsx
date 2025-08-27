@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { logError } from '../utils/errorHandler';
 
 const AuthContext = createContext(null);
 
@@ -14,7 +15,7 @@ export const AuthProvider = ({ children }) => {
         setUser(JSON.parse(savedUser));
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
+      logError(error, 'AuthContext - loading user data');
     } finally {
       setIsLoading(false);
     }
@@ -22,6 +23,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = (userData) => {
     try {
+      if (!userData || !userData.id || !userData.token) {
+        throw new Error('Invalid user data provided for login');
+      }
+      
       // Ensure stats are properly initialized
       const userWithStats = {
         ...userData,
@@ -35,7 +40,8 @@ export const AuthProvider = ({ children }) => {
       setUser(userWithStats);
       localStorage.setItem('user', JSON.stringify(userWithStats));
     } catch (error) {
-      console.error('Error during login:', error);
+      logError(error, 'AuthContext - login', { userId: userData?.id });
+      throw error; // Re-throw to allow handling by the caller
     }
   };
 
@@ -44,7 +50,7 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       localStorage.removeItem('user');
     } catch (error) {
-      console.error('Error during logout:', error);
+      logError(error, 'AuthContext - logout');
     }
   };
 
@@ -52,6 +58,10 @@ export const AuthProvider = ({ children }) => {
   const updateStats = (newStats) => {
     if (user) {
       try {
+        if (!newStats) {
+          throw new Error('Invalid stats data provided');
+        }
+        
         const updatedUser = {
           ...user,
           stats: newStats
@@ -59,7 +69,7 @@ export const AuthProvider = ({ children }) => {
         setUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
       } catch (error) {
-        console.error('Error updating stats:', error);
+        logError(error, 'AuthContext - updateStats', { userId: user.id });
       }
     }
   };

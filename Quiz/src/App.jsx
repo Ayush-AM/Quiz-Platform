@@ -5,6 +5,8 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import QuizAttempt from "./pages/QuizAttempt";
 import QuizResult from "./pages/QuizResult";
+import ErrorBoundary from "./components/ErrorBoundary";
+import ErrorTest from "./components/ErrorTest";
 
 // Protected Route component
 const ProtectedRoute = ({ children }) => {
@@ -56,6 +58,9 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
 
+      {/* Error Test route */}
+      <Route path="/error-test" element={<ErrorTest />} />
+      
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" />} />
     </Routes>
@@ -65,9 +70,11 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppRoutes />
-      </Router>
+      <ErrorBoundary>
+        <Router>
+          <AppRoutes />
+        </Router>
+      </ErrorBoundary>
     </AuthProvider>
   );
 }
