@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: quiz-platform-backend
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    env: node
+    region: ohio
+    envVars:
+      - key: NODE_ENV
+        value: production
