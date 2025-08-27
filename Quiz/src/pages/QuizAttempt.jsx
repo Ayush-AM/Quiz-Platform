@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { processApiError, logError } from '../utils/errorHandler';
 import ErrorBoundary from '../components/ErrorBoundary';
+import { quizData } from '../data/quizData';
 import './QuizAttempt.css';
 
 export default function QuizAttempt() {
@@ -15,7 +16,8 @@ export default function QuizAttempt() {
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [quizData, setQuizData] = useState(null);
-  const [quizStarted, setQuizStarted] = useState(false);
+  // Quiz starts immediately once data is loaded
+  const [quizStarted] = useState(true);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function QuizAttempt() {
       
       try {
         setIsLoading(true);
-        const response = await fetch(`http://localhost:5000/api/quizzes/${id}`, {
+        const response = await fetch(`http://localhost:5000/api/quizzes/${id}/attempt`, {
           headers: {
             'Authorization': `Bearer ${user.token}`,
             'Content-Type': 'application/json'
@@ -45,8 +47,11 @@ export default function QuizAttempt() {
         
         const data = await response.json();
         
+        console.log('Raw quiz data from backend:', data);
+        
         // Validate quiz data
         if (!data || !data.questions || !Array.isArray(data.questions)) {
+          console.error('Invalid quiz data structure:', data);
           throw new Error('Invalid quiz data received from server');
         }
         
@@ -57,19 +62,56 @@ export default function QuizAttempt() {
           description: data.description,
           totalQuestions: data.questions.length,
           timeLimit: data.timeLimit,
-          questions: data.questions.map((q, index) => ({
-            id: index + 1,
-            question: q.questionText,
-            options: q.options.map(opt => opt.text),
-            correctAnswer: q.options.findIndex(opt => opt.isCorrect)
-          }))
+          questions: data.questions.map((q, index) => {
+            // Find the correct answer index
+            const correctIndex = q.options.findIndex(opt => opt.isCorrect === true);
+            console.log(`Question ${index + 1}: correctIndex = ${correctIndex}, options:`, q.options.map((opt, i) => ({ text: opt.text, isCorrect: opt.isCorrect, index: i })));
+            
+            return {
+              id: index + 1,
+              question: q.questionText,
+              options: q.options.map(opt => opt.text),
+              correctAnswer: correctIndex
+            };
+          })
         };
+        
+        console.log('Transformed quiz data:', transformedData);
         
         setQuizData(transformedData);
         setTimeLeft(data.timeLimit * 60); // Convert minutes to seconds
       } catch (err) {
         logError(err, 'QuizAttempt component - fetchQuizData', { quizId: id });
-        setError(err.message || 'Failed to load quiz');
+        console.error('Backend fetch failed, trying frontend fallback:', err);
+        
+        // Fallback to frontend data if backend fails
+        try {
+          const frontendQuiz = quizData[id];
+          if (frontendQuiz) {
+            console.log('Using frontend fallback data:', frontendQuiz);
+            const transformedData = {
+              id: id,
+              title: frontendQuiz.title,
+              description: frontendQuiz.description,
+              totalQuestions: frontendQuiz.questions.length,
+              timeLimit: frontendQuiz.timeLimit,
+              questions: frontendQuiz.questions.map((q, index) => ({
+                id: index + 1,
+                question: q.question,
+                options: q.options,
+                correctAnswer: q.correctAnswer
+              }))
+            };
+            setQuizData(transformedData);
+            setTimeLeft(frontendQuiz.timeLimit * 60);
+            setError(''); // Clear any previous errors
+          } else {
+            setError('Quiz not found in backend or frontend data');
+          }
+        } catch (fallbackErr) {
+          console.error('Frontend fallback also failed:', fallbackErr);
+          setError(err.message || 'Failed to load quiz');
+        }
       } finally {
         setIsLoading(false);
       }
@@ -80,7 +122,7 @@ export default function QuizAttempt() {
 
   // Timer effect
   useEffect(() => {
-    if (!quizStarted || !quizData || timeLeft <= 0) return;
+    if (!quizData || timeLeft <= 0) return;
 
     const timer = setInterval(() => {
       try {
@@ -129,6 +171,12 @@ export default function QuizAttempt() {
 
   const handleOptionSelect = (optionIndex) => {
     try {
+      const currentQuestion = quizData.questions[currentQuestionIndex];
+      const isCorrect = optionIndex === currentQuestion.correctAnswer;
+      console.log(`Selected option ${optionIndex} for question ${currentQuestionIndex + 1}`);
+      console.log(`Correct answer is: ${currentQuestion.correctAnswer}`);
+      console.log(`Is correct: ${isCorrect}`);
+      
       setAnswers(prev => ({
         ...prev,
         [currentQuestionIndex]: optionIndex
@@ -186,19 +234,7 @@ export default function QuizAttempt() {
     }
   };
 
-  // Start the quiz
-  const startQuiz = () => {
-    try {
-      // Validate quiz data before starting
-      if (!quizData || !quizData.questions || quizData.questions.length === 0) {
-        throw new Error('Cannot start quiz: Invalid or empty quiz data');
-      }
-      setQuizStarted(true);
-    } catch (err) {
-      logError(err, 'QuizAttempt component - startQuiz', { quizId: id });
-      setError('Failed to start quiz. Please try again.');
-    }
-  };
+  // Removed manual start; quiz starts automatically.
 
   if (isLoading) {
     return (
@@ -251,59 +287,7 @@ export default function QuizAttempt() {
     );
   }
 
-  // If quiz hasn't started yet, show the start screen
-  if (!quizStarted) {
-    return (
-      <div className="quiz-attempt-container">
-        <div className="quiz-start-screen">
-          <h1>{quizData.title}</h1>
-          <p className="quiz-description">{quizData.description}</p>
-          
-          <div className="quiz-info">
-            <div className="info-item">
-              <span className="info-label">Questions:</span>
-              <span className="info-value">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="16" x2="12" y2="12"></line>
-                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                </svg>
-                {quizData.totalQuestions}
-              </span>
-            </div>
-            <div className="info-item">
-              <span className="info-label">Time Limit:</span>
-              <span className="info-value">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                {quizData.timeLimit} minutes
-              </span>
-            </div>
-          </div>
-          
-          <div className="quiz-instructions">
-            <h3>Instructions:</h3>
-            <ul>
-              <li>Read each question carefully before answering</li>
-              <li>You can navigate between questions using the Next and Previous buttons</li>
-              <li>Your answers are saved automatically when you select an option</li>
-              <li>You can review and change your answers before submitting</li>
-              <li>The quiz will be submitted automatically when the time expires</li>
-            </ul>
-          </div>
-          
-          <button onClick={startQuiz} className="start-quiz-button">
-            Start Quiz
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Removed start screen so users see the quiz immediately
   
   const currentQuestion = quizData.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / quizData.questions.length) * 100;

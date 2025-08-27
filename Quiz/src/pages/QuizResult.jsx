@@ -14,6 +14,7 @@ export default function QuizResult() {
   const [quizData, setQuizData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -28,7 +29,7 @@ export default function QuizResult() {
       const fetchQuizData = async () => {
         try {
           setIsLoading(true);
-          const response = await fetch(`http://localhost:5000/api/quizzes/${location.state.results.quizId}`, {
+          const response = await fetch(`http://localhost:5000/api/quizzes/${location.state.results.quizId}/attempt`, {
             headers: {
               'Authorization': `Bearer ${user.token}`,
               'Content-Type': 'application/json'
@@ -46,13 +47,18 @@ export default function QuizResult() {
             id: data._id,
             title: data.title,
             description: data.description,
-            questions: data.questions.map((q, index) => ({
-              id: q._id, // Use the actual MongoDB ObjectId
-              question: q.questionText,
-              options: q.options.map(opt => opt.text),
-              correctAnswer: q.options.findIndex(opt => opt.isCorrect),
-              originalQuestion: q // Keep the original question data
-            }))
+            questions: data.questions.map((q, index) => {
+              const correctIndex = q.options.findIndex(opt => opt.isCorrect === true);
+              console.log(`QuizResult - Question ${index + 1}: correctIndex = ${correctIndex}, options:`, q.options.map((opt, i) => ({ text: opt.text, isCorrect: opt.isCorrect, index: i })));
+              
+              return {
+                id: q._id, // Use the actual MongoDB ObjectId
+                question: q.questionText,
+                options: q.options.map(opt => opt.text),
+                correctAnswer: correctIndex,
+                originalQuestion: q // Keep the original question data
+              };
+            })
           };
           
           setQuizData(transformedData);
@@ -72,7 +78,7 @@ export default function QuizResult() {
 
   // Update user stats when results are available
   useEffect(() => {
-    if (results && quizData && user && !statsUpdated) {
+    if (results && quizData && user && !statsUpdated && !isSubmitting) {
       const score = calculateScore();
       
       // Debug logging
@@ -84,61 +90,57 @@ export default function QuizResult() {
       });
       
       const submitResult = async () => {
+        if (isSubmitting) {
+          console.log('Quiz submission already in progress, skipping duplicate');
+          return;
+        }
+        
+        setIsSubmitting(true);
+        console.log('Starting quiz result submission...');
+        
         try {
           // Prepare the request payload
+          console.log('Debug - Raw answers from QuizAttempt:', results.answers);
+          console.log('Debug - Quiz data questions:', quizData.questions.length);
+          
+          const processedAnswers = [];
+          
+          // Process each answer
+          Object.entries(results.answers).forEach(([questionIndex, answerOptionIndex]) => {
+            const numIndex = parseInt(questionIndex, 10);
+            const question = quizData.questions[numIndex];
+            
+            console.log(`Processing question ${numIndex + 1}:`);
+            console.log('  User selected option index:', answerOptionIndex);
+            console.log('  Question exists:', !!question);
+            
+            if (question && question.originalQuestion && question.originalQuestion.options) {
+              const selectedOption = question.originalQuestion.options[answerOptionIndex];
+              
+              console.log('  Selected option:', selectedOption?.text);
+              console.log('  Option ID:', selectedOption?._id);
+              
+              if (selectedOption && selectedOption._id) {
+                processedAnswers.push({
+                  questionId: question.id,
+                  selectedOptionIds: [selectedOption._id]
+                });
+                console.log('  ✅ Answer processed successfully');
+              } else {
+                console.error('  ❌ Selected option not found');
+              }
+            } else {
+              console.error('  ❌ Question data missing at index', numIndex);
+            }
+          });
+          
           const payload = {
             quizId: results.quizId,
             timeTaken: results.timeSpent,
-            answers: Object.entries(results.answers).map(([index, answer]) => {
-              const question = quizData.questions[index];
-              // Convert string index to number for array access
-              const numIndex = parseInt(index, 10);
-              
-              // Ensure the question exists at this index
-              if (!question || !question.originalQuestion || !question.originalQuestion.options) {
-                console.error(`Question data missing at index ${numIndex}`, { question, quizData });
-                throw new Error(`Invalid question data at index ${numIndex}`);
-              }
-              
-              let selectedIds;
-              
-              try {
-                selectedIds = Array.isArray(answer) 
-                  ? answer.map(optIdx => {
-                      // Ensure the option exists at this index
-                      if (typeof optIdx !== 'number' || !question.originalQuestion.options[optIdx]) {
-                        console.error(`Option data missing at index ${optIdx} for question ${numIndex}`, { 
-                          optIdx, 
-                          question, 
-                          options: question.originalQuestion.options 
-                        });
-                        throw new Error(`Invalid option data at index ${optIdx} for question ${numIndex}`);
-                      }
-                      return question.originalQuestion.options[optIdx]._id;
-                    })
-                  : (() => {
-                      // Ensure the option exists at this index
-                      if (typeof answer !== 'number' || !question.originalQuestion.options[answer]) {
-                        console.error(`Option data missing at index ${answer} for question ${numIndex}`, { 
-                          answer, 
-                          question, 
-                          options: question.originalQuestion.options 
-                        });
-                        throw new Error(`Invalid option data at index ${answer} for question ${numIndex}`);
-                      }
-                      return [question.originalQuestion.options[answer]._id];
-                    })();
-              } catch (err) {
-                console.error('Error processing answer:', err);
-                throw new Error(`Error processing answer for question ${numIndex}: ${err.message}`);
-              }
-              
-              return {
-                questionId: question.id,
-                selectedOptionIds: selectedIds
-              };
-            })
+            answers: processedAnswers
           };
+          
+          console.log('Final processed answers count:', processedAnswers.length);
           
           // Log the final payload for debugging
           console.log('Submitting quiz result payload:', JSON.stringify(payload, null, 2));
@@ -190,12 +192,14 @@ export default function QuizResult() {
           logError(error, 'QuizResult component - submitResult', { quizId: results.quizId });
           setError(error.message || 'Failed to update your quiz results. Please try again.');
           console.error('Error submitting quiz result:', error);
+        } finally {
+          setIsSubmitting(false);
         }
       };
 
       submitResult();
     }
-  }, [results, quizData, user, statsUpdated, login]);
+  }, [results, quizData, user, statsUpdated, isSubmitting, login]);
 
   if (isLoading) {
     return (
@@ -337,32 +341,48 @@ export default function QuizResult() {
   }
 
   const calculateScore = () => {
-    // Count correct answers based on the original question data
+    // Count correct answers based on the question data
     let correctAnswers = 0;
+    
+    console.log('QuizResult - Calculating score with:', {
+      answers: results.answers,
+      questionsCount: quizData.questions.length
+    });
     
     Object.entries(results.answers).forEach(([questionIndex, answer]) => {
       const question = quizData.questions[questionIndex];
-      if (!question || !question.originalQuestion) return;
+      if (!question) {
+        console.log(`Question at index ${questionIndex} not found`);
+        return;
+      }
       
-      // Get correct option indices
-      const correctIndices = question.originalQuestion.options
-        .map((opt, idx) => opt.isCorrect ? idx : -1)
-        .filter(idx => idx !== -1);
+      console.log(`QuizResult - Question ${parseInt(questionIndex) + 1}:`, {
+        userAnswer: answer,
+        correctAnswer: question.correctAnswer,
+        question: question.question
+      });
       
-      // Check if user's answer matches correct answers
-      if (Array.isArray(answer)) {
-        // For multiple choice questions
-        const isCorrect = 
-          correctIndices.length === answer.length && 
-          correctIndices.every(idx => answer.includes(idx)) &&
-          answer.every(idx => correctIndices.includes(idx));
-        
-        if (isCorrect) correctAnswers++;
-      } else {
-        // For single choice questions
-        if (correctIndices.includes(answer)) correctAnswers++;
+      // Check if we have the correct answer directly
+      if (question.correctAnswer !== undefined) {
+        const isCorrect = answer === question.correctAnswer;
+        console.log(`Answer comparison: ${answer} === ${question.correctAnswer} = ${isCorrect}`);
+        if (isCorrect) {
+          correctAnswers++;
+        }
+        return;
+      }
+      
+      // Fallback: try to find correct answer from options if they exist
+      if (question.options && Array.isArray(question.options)) {
+        const correctIndex = question.options.findIndex(opt => opt.isCorrect === true);
+        console.log(`Fallback method - correctIndex: ${correctIndex}, userAnswer: ${answer}`);
+        if (correctIndex !== -1 && answer === correctIndex) {
+          correctAnswers++;
+        }
       }
     });
+    
+    console.log(`QuizResult - Final score: ${correctAnswers}/${quizData.questions.length}`);
     
     return {
       correct: correctAnswers,
@@ -385,6 +405,25 @@ export default function QuizResult() {
   };
 
   const score = calculateScore();
+
+  const isAnswerCorrect = (question, userAnswer) => {
+    if (!question) return false;
+    
+    // Check if we have the correct answer directly
+    if (question.correctAnswer !== undefined) {
+      return userAnswer === question.correctAnswer;
+    }
+    
+    // Fallback: try to find correct answer from options if they exist
+    if (question.options && Array.isArray(question.options)) {
+      const correctIndex = question.options.findIndex(opt => opt.isCorrect === true);
+      if (correctIndex !== -1) {
+        return userAnswer === correctIndex;
+      }
+    }
+    
+    return false;
+  };
 
   return (
     <ErrorBoundary>
@@ -446,39 +485,58 @@ export default function QuizResult() {
               </svg>
               Question Review
             </h2>
-            {quizData.questions.map((question, index) => (
-              <div key={question.id} className="review-item">
-                <div className="review-question">
-                  <strong>Q{index + 1}:</strong> {question.question}
+            {quizData.questions.map((question, index) => {
+              const userAnswer = results.answers[index];
+              const correct = isAnswerCorrect(question, userAnswer);
+              const userAnswerText = userAnswer === undefined
+                ? 'Not answered'
+                : Array.isArray(userAnswer)
+                  ? userAnswer.map(i => question.options[i]).join(', ')
+                  : question.options[userAnswer];
+              const correctAnswerText = (() => {
+                // If we have the correct answer index directly
+                if (question.correctAnswer !== undefined) {
+                  return question.options[question.correctAnswer];
+                }
+                
+                // Fallback: try to find correct answer from options if they exist
+                if (question.options && Array.isArray(question.options)) {
+                  const correctIndex = question.options.findIndex(opt => opt.isCorrect === true);
+                  if (correctIndex !== -1) {
+                    return question.options[correctIndex];
+                  }
+                }
+                
+                return 'Unknown';
+              })();
+              return (
+                <div key={question.id} className="review-item">
+                  <div className="review-question">
+                    <strong>Q{index + 1}:</strong> {question.question}
+                  </div>
+                  <div className="review-answer">
+                    <span className={`answer-icon ${correct ? 'answer-correct' : 'answer-incorrect'}`}>
+                      {correct ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      )}
+                    </span>
+                    <span>
+                      Your answer: {userAnswerText}
+                      {!correct && (
+                        <span className="correct-answer"> {" "}(Correct: {correctAnswerText})</span>
+                      )}
+                    </span>
+                  </div>
                 </div>
-                <div className="review-answer">
-                  <span className={`answer-icon ${
-                    results.answers[index] === question.correctAnswer 
-                      ? 'answer-correct' 
-                      : 'answer-incorrect'
-                  }`}>
-                    {results.answers[index] === question.correctAnswer ? (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                      </svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                      </svg>
-                    )}
-                  </span>
-                  <span>
-                    Your answer: {question.options[results.answers[index] !== undefined ? results.answers[index] : 0]}
-                    {results.answers[index] !== question.correctAnswer && (
-                      <span className="correct-answer">
-                        {" "}(Correct: {question.options[question.correctAnswer]})
-                      </span>
-                    )}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="action-buttons">

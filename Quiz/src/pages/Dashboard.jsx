@@ -71,7 +71,18 @@ export default function Dashboard() {
     // Refresh stats every 5 minutes
     const intervalId = setInterval(loadStats, 5 * 60 * 1000);
     
-    return () => clearInterval(intervalId);
+    // Refresh stats when window comes back into focus (user returns from quiz)
+    const handleFocus = () => {
+      console.log('Dashboard focused - refreshing stats');
+      loadStats();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [user, navigate]);
 
   useEffect(() => {
@@ -103,7 +114,7 @@ export default function Dashboard() {
           id: quiz._id,
           title: quiz.title,
           category: quiz.category || 'General',
-          questions: quiz.questions.length,
+          questionCount: Array.isArray(quiz.questions) ? quiz.questions.length : 0,
           timeLimit: `${quiz.timeLimit} mins`,
           difficulty: getDifficultyLevel(quiz),
           participants: quiz.participants || 0,
@@ -308,7 +319,7 @@ export default function Dashboard() {
                       <circle cx="12" cy="12" r="10"></circle>
                       <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
-                    {quiz.questions} Questions
+                    {quiz.questionCount} {quiz.questionCount === 1 ? 'Question' : 'Questions'}
                   </span>
                   <span>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

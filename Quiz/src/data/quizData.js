@@ -39,6 +39,36 @@ export const quizData = {
         question: "Which operator is used for strict equality comparison?",
         options: ["==", "===", "=", "!="],
         correctAnswer: 1
+      },
+      {
+        id: 6,
+        question: "Which method converts a JSON string to an object?",
+        options: ["JSON.parse()", "JSON.stringify()", "Object.assign()", "toJSON()"],
+        correctAnswer: 0
+      },
+      {
+        id: 7,
+        question: "What is the result of: Boolean('')?",
+        options: ["true", "false", "undefined", "null"],
+        correctAnswer: 1
+      },
+      {
+        id: 8,
+        question: "Which keyword declares a block-scoped variable?",
+        options: ["var", "let", "const", "static"],
+        correctAnswer: 1
+      },
+      {
+        id: 9,
+        question: "What does Array.prototype.map() return?",
+        options: ["A new array", "A modified original array", "An object", "A number"],
+        correctAnswer: 0
+      },
+      {
+        id: 10,
+        question: "How do you create a promise that immediately resolves?",
+        options: ["new Promise(resolve => resolve())", "Promise.new()", "Promise.create()", "resolve()"],
+        correctAnswer: 0
       }
     ]
   },
@@ -86,6 +116,42 @@ export const quizData = {
           "To store component state"
         ],
         correctAnswer: 1
+      },
+      {
+        id: 5,
+        question: "Which hook lets you access context values?",
+        options: ["useMemo", "useCallback", "useContext", "useRef"],
+        correctAnswer: 2
+      },
+      {
+        id: 6,
+        question: "Which hook is best for storing a mutable value that persists across renders?",
+        options: ["useState", "useRef", "useEffect", "useReducer"],
+        correctAnswer: 1
+      },
+      {
+        id: 7,
+        question: "useMemo is primarily used to...",
+        options: ["memoize expensive calculations", "fetch data", "render children", "subscribe to events"],
+        correctAnswer: 0
+      },
+      {
+        id: 8,
+        question: "In useEffect, returning a function is used for...",
+        options: ["updating state", "cleanup", "rendering", "memoization"],
+        correctAnswer: 1
+      },
+      {
+        id: 9,
+        question: "Which hook is suitable for complex state transitions?",
+        options: ["useState", "useReducer", "useRef", "useLayoutEffect"],
+        correctAnswer: 1
+      },
+      {
+        id: 10,
+        question: "useCallback returns...",
+        options: ["a memoized function", "a memoized value", "a ref object", "JSX"],
+        correctAnswer: 0
       }
     ]
   },
@@ -150,6 +216,35 @@ export const quizData = {
           "Sets border around grid"
         ],
         correctAnswer: 2
+      },
+      {
+        id: 7,
+        question: "Which property controls alignment along the cross axis in Flexbox?",
+        options: ["justify-content", "align-items", "align-content", "place-items"],
+        correctAnswer: 1
+      },
+      {
+        id: 8,
+        question: "How do you create a grid with 3 equal columns?",
+        options: [
+          "grid-template-columns: 3fr",
+          "grid-template-columns: repeat(3, 1fr)",
+          "grid-columns: 3 1fr",
+          "columns: 3"
+        ],
+        correctAnswer: 1
+      },
+      {
+        id: 9,
+        question: "Which property lets grid items span multiple columns?",
+        options: ["grid-area", "grid-column", "grid-span", "column-span"],
+        correctAnswer: 1
+      },
+      {
+        id: 10,
+        question: "In Flexbox, which property wraps items to the next line?",
+        options: ["flex-direction", "flex-flow", "flex-wrap", "wrap-items"],
+        correctAnswer: 2
       }
     ]
   },
@@ -202,6 +297,36 @@ export const quizData = {
           "Numbers from 0 to 5",
           "Numbers from 1 to 4"
         ],
+        correctAnswer: 1
+      },
+      {
+        id: 6,
+        question: "Which keyword defines a function in Python?",
+        options: ["func", "def", "lambda", "function"],
+        correctAnswer: 1
+      },
+      {
+        id: 7,
+        question: "What is a correct way to format strings in Python 3?",
+        options: ["format('x')", "f'Hello {name}'", "'%s' % name", "string.format(name)"],
+        correctAnswer: 1
+      },
+      {
+        id: 8,
+        question: "Which data structure is immutable?",
+        options: ["list", "dict", "tuple", "set"],
+        correctAnswer: 2
+      },
+      {
+        id: 9,
+        question: "What does 'PEP' stand for in Python?",
+        options: ["Python Execution Plan", "Python Enhancement Proposal", "Package Entry Point", "Performance Evaluation Plan"],
+        correctAnswer: 1
+      },
+      {
+        id: 10,
+        question: "Which operator is used for exponentiation?",
+        options: ["^", "**", "exp()", "pow"],
         correctAnswer: 1
       }
     ]
