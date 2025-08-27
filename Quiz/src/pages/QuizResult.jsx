@@ -47,10 +47,11 @@ export default function QuizResult() {
             title: data.title,
             description: data.description,
             questions: data.questions.map((q, index) => ({
-              id: index + 1,
+              id: q._id, // Use the actual MongoDB ObjectId
               question: q.questionText,
               options: q.options.map(opt => opt.text),
-              correctAnswer: q.options.findIndex(opt => opt.isCorrect)
+              correctAnswer: q.options.findIndex(opt => opt.isCorrect),
+              originalQuestion: q // Keep the original question data
             }))
           };
           
@@ -74,8 +75,74 @@ export default function QuizResult() {
     if (results && quizData && user && !statsUpdated) {
       const score = calculateScore();
       
+      // Debug logging
+      console.log('Preparing to submit quiz results:', {
+        quizId: results.quizId,
+        timeSpent: results.timeSpent,
+        answers: results.answers,
+        quizData: quizData
+      });
+      
       const submitResult = async () => {
         try {
+          // Prepare the request payload
+          const payload = {
+            quizId: results.quizId,
+            timeTaken: results.timeSpent,
+            answers: Object.entries(results.answers).map(([index, answer]) => {
+              const question = quizData.questions[index];
+              // Convert string index to number for array access
+              const numIndex = parseInt(index, 10);
+              
+              // Ensure the question exists at this index
+              if (!question || !question.originalQuestion || !question.originalQuestion.options) {
+                console.error(`Question data missing at index ${numIndex}`, { question, quizData });
+                throw new Error(`Invalid question data at index ${numIndex}`);
+              }
+              
+              let selectedIds;
+              
+              try {
+                selectedIds = Array.isArray(answer) 
+                  ? answer.map(optIdx => {
+                      // Ensure the option exists at this index
+                      if (typeof optIdx !== 'number' || !question.originalQuestion.options[optIdx]) {
+                        console.error(`Option data missing at index ${optIdx} for question ${numIndex}`, { 
+                          optIdx, 
+                          question, 
+                          options: question.originalQuestion.options 
+                        });
+                        throw new Error(`Invalid option data at index ${optIdx} for question ${numIndex}`);
+                      }
+                      return question.originalQuestion.options[optIdx]._id;
+                    })
+                  : (() => {
+                      // Ensure the option exists at this index
+                      if (typeof answer !== 'number' || !question.originalQuestion.options[answer]) {
+                        console.error(`Option data missing at index ${answer} for question ${numIndex}`, { 
+                          answer, 
+                          question, 
+                          options: question.originalQuestion.options 
+                        });
+                        throw new Error(`Invalid option data at index ${answer} for question ${numIndex}`);
+                      }
+                      return [question.originalQuestion.options[answer]._id];
+                    })();
+              } catch (err) {
+                console.error('Error processing answer:', err);
+                throw new Error(`Error processing answer for question ${numIndex}: ${err.message}`);
+              }
+              
+              return {
+                questionId: question.id,
+                selectedOptionIds: selectedIds
+              };
+            })
+          };
+          
+          // Log the final payload for debugging
+          console.log('Submitting quiz result payload:', JSON.stringify(payload, null, 2));
+          
           // Submit the quiz result to the backend
           const response = await fetch('http://localhost:5000/api/results', {
             method: 'POST',
@@ -83,36 +150,32 @@ export default function QuizResult() {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${user.token}`
             },
-            body: JSON.stringify({
-              quizId: results.quizId,
-              score: score.percentage,
-              timeTaken: results.timeSpent,
-              answers: Object.entries(results.answers).map(([index, answer]) => ({
-                questionId: quizData.questions[index].id,
-                selectedOptionIndex: answer,
-                isCorrect: answer === quizData.questions[index].correctAnswer
-              }))
-            })
+            body: JSON.stringify(payload)
           });
 
+          // Log the response status
+          console.log('API response status:', response.status);
+          
           if (!response.ok) {
-            const errorMessage = await processApiError(response);
+            const errorData = await response.json().catch(e => ({ message: 'Could not parse error response' }));
+            console.error('API error response:', errorData);
+            const errorMessage = errorData.message || await processApiError(response);
             throw new Error(errorMessage);
           }
 
-          // Fetch updated stats
-          const statsResponse = await fetch(`http://localhost:5000/api/results/stats/${user.id}`, {
-            headers: {
-              'Authorization': `Bearer ${user.token}`
-            }
-          });
-
-          if (!statsResponse.ok) {
-            const errorMessage = await processApiError(statsResponse);
-            throw new Error(errorMessage);
+          // The enhanced backend now returns stats directly
+          const responseData = await response.json();
+          
+          // Extract stats and correct answers from the response
+          const { stats: newStats, correctAnswers } = responseData;
+          
+          // Store correct answers for review if needed
+          if (correctAnswers) {
+            setResults(prev => ({
+              ...prev,
+              correctAnswers
+            }));
           }
-
-          const newStats = await statsResponse.json();
 
           // Update user data with new stats
           const updatedUser = {
@@ -125,7 +188,8 @@ export default function QuizResult() {
           setStatsUpdated(true);
         } catch (error) {
           logError(error, 'QuizResult component - submitResult', { quizId: results.quizId });
-          setError('Failed to update your quiz results. Please try again.');
+          setError(error.message || 'Failed to update your quiz results. Please try again.');
+          console.error('Error submitting quiz result:', error);
         }
       };
 
@@ -162,14 +226,103 @@ export default function QuizResult() {
             <line x1="12" y1="8" x2="12" y2="12"></line>
             <line x1="12" y1="16" x2="12.01" y2="16"></line>
           </svg>
+          <h2>Failed to update your quiz results</h2>
           <p>{error}</p>
-          <button onClick={() => navigate('/dashboard')} className="action-button dashboard-button">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-            Back to Dashboard
-          </button>
+          <div className="error-actions">
+            <button onClick={() => {
+              setError('');
+              setStatsUpdated(false);
+              // Retry submission
+              const score = calculateScore();
+              const submitResult = async () => {
+                try {
+                  // Prepare the request payload
+                  const payload = {
+                    quizId: results.quizId,
+                    timeTaken: results.timeSpent,
+                    answers: Object.entries(results.answers).map(([index, answer]) => {
+                      const question = quizData.questions[index];
+                      const numIndex = parseInt(index, 10);
+                      
+                      if (!question || !question.originalQuestion || !question.originalQuestion.options) {
+                        throw new Error(`Invalid question data at index ${numIndex}`);
+                      }
+                      
+                      let selectedIds;
+                      
+                      try {
+                        selectedIds = Array.isArray(answer) 
+                          ? answer.map(optIdx => question.originalQuestion.options[optIdx]._id)
+                          : [question.originalQuestion.options[answer]._id];
+                      } catch (err) {
+                        throw new Error(`Error processing answer for question ${numIndex}: ${err.message}`);
+                      }
+                      
+                      return {
+                        questionId: question.id,
+                        selectedOptionIds: selectedIds
+                      };
+                    })
+                  };
+                  
+                  // Submit the quiz result to the backend
+                  const response = await fetch('http://localhost:5000/api/results', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${user.token}`
+                    },
+                    body: JSON.stringify(payload)
+                  });
+                  
+                  if (!response.ok) {
+                    const errorData = await response.json().catch(e => ({ message: 'Could not parse error response' }));
+                    throw new Error(errorData.message || 'Failed to update your quiz results');
+                  }
+                  
+                  const responseData = await response.json();
+                  
+                  // Extract stats and correct answers from the response
+                  const { stats: newStats, correctAnswers } = responseData;
+                  
+                  // Store correct answers for review if needed
+                  if (correctAnswers) {
+                    setResults(prev => ({
+                      ...prev,
+                      correctAnswers
+                    }));
+                  }
+                  
+                  // Update user data with new stats
+                  const updatedUser = {
+                    ...user,
+                    stats: newStats
+                  };
+                  
+                  // Update user in context
+                  login(updatedUser);
+                  setStatsUpdated(true);
+                } catch (err) {
+                  logError(err, 'QuizResult component - retry submitResult', { quizId: results.quizId });
+                  setError(err.message || 'Failed to update your quiz results. Please try again.');
+                }
+              };
+              
+              submitResult();
+            }} className="action-button retry-button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+              </svg>
+              Try Again
+            </button>
+            <button onClick={() => navigate('/dashboard')} className="action-button dashboard-button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+              Back to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -184,9 +337,32 @@ export default function QuizResult() {
   }
 
   const calculateScore = () => {
-    const correctAnswers = Object.keys(results.answers).filter(questionIndex => 
-      results.answers[questionIndex] === quizData.questions[questionIndex].correctAnswer
-    ).length;
+    // Count correct answers based on the original question data
+    let correctAnswers = 0;
+    
+    Object.entries(results.answers).forEach(([questionIndex, answer]) => {
+      const question = quizData.questions[questionIndex];
+      if (!question || !question.originalQuestion) return;
+      
+      // Get correct option indices
+      const correctIndices = question.originalQuestion.options
+        .map((opt, idx) => opt.isCorrect ? idx : -1)
+        .filter(idx => idx !== -1);
+      
+      // Check if user's answer matches correct answers
+      if (Array.isArray(answer)) {
+        // For multiple choice questions
+        const isCorrect = 
+          correctIndices.length === answer.length && 
+          correctIndices.every(idx => answer.includes(idx)) &&
+          answer.every(idx => correctIndices.includes(idx));
+        
+        if (isCorrect) correctAnswers++;
+      } else {
+        // For single choice questions
+        if (correctIndices.includes(answer)) correctAnswers++;
+      }
+    });
     
     return {
       correct: correctAnswers,

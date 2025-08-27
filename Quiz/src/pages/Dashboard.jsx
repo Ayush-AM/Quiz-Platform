@@ -15,7 +15,8 @@ export default function Dashboard() {
     completedQuizzes: 0,
     averageScore: 0,
     totalPoints: 0,
-    ranking: 0
+    ranking: 0,
+    totalUsers: 0
   });
 
   useEffect(() => {
@@ -56,7 +57,8 @@ export default function Dashboard() {
             completedQuizzes: 0,
             averageScore: 0,
             totalPoints: 0,
-            ranking: 0
+            ranking: 0,
+            totalUsers: 0
           });
         }
       } finally {
@@ -241,12 +243,12 @@ export default function Dashboard() {
             </div>
             <span style={{color: '#000'}}>Global Ranking</span>
           </div>
-          <div className="stat-value">#{stats.ranking}</div>
+          <div className="stat-value">#{stats.ranking} <span className="total-users">of {stats.totalUsers}</span></div>
           <div className="stat-label">
             {stats.ranking === 0 ? 'Not ranked yet' :
              stats.ranking <= 10 ? 'Top 10!' :
-             stats.ranking <= 50 ? 'Top 50!' :
-             stats.ranking <= 100 ? 'Top 100!' :
+             stats.ranking <= Math.ceil(stats.totalUsers * 0.1) ? `Top ${Math.ceil(stats.totalUsers * 0.1)}!` :
+             stats.ranking <= Math.ceil(stats.totalUsers * 0.25) ? `Top ${Math.ceil(stats.totalUsers * 0.25)}!` :
              'Keep climbing!'}
           </div>
         </div>
