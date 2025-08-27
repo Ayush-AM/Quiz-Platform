@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Manual Quiz Submission Test</title>
+</head>
+<body>
+    <h1>Manual Quiz Submission Test</h1>
+    <button onclick="testSubmission()">Test Submit Quiz</button>
+    <div id="result"></div>
+
+    <script>
+    async function testSubmission() {
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = 'Testing...';
+
+        try {
+            // Get user token from localStorage (if you're using localStorage for auth)
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            if (!user.token) {
+                resultDiv.innerHTML = 'Error: No user token found. Please login first.';
+                return;
+            }
+
+            console.log('User token:', user.token.substring(0, 20) + '...');
+
+            // Actual quiz data from database
+            const payload = {
+                quizId: "68af3c050d58de41896fb70b", // JavaScript Fundamentals quiz
+                timeTaken: 120,
+                answers: [
+                    {
+                        questionId: "68af3c050d58de41896fb70c", // "What is the output of: console.log(typeof null)?"
+                        selectedOptionIds: ["68af3c050d58de41896fb70e"] // "object" (correct answer)
+                    }
+                ]
+            };
+
+            console.log('Sending payload:', JSON.stringify(payload, null, 2));
+
+            const response = await fetch('http://localhost:5000/api/results', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${user.token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            console.log('Response status:', response.status);
+
+            if (response.ok) {
+                const result = await response.json();
+                resultDiv.innerHTML = 'Success! Result: ' + JSON.stringify(result, null, 2);
+                console.log('Success result:', result);
+            } else {
+                const error = await response.text();
+                resultDiv.innerHTML = 'Error: ' + error;
+                console.error('Error response:', error);
+            }
+
+        } catch (error) {
+            resultDiv.innerHTML = 'Error: ' + error.message;
+            console.error('Request error:', error);
+        }
+    }
+    </script>
+</body>
+</html>

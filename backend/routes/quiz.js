@@ -45,13 +45,35 @@ router.get('/', async (req, res) => {
   }
 });
 
-// @desc    Get quiz by ID
+// @desc    Get quiz by ID (public, but without correct answers)
 // @route   GET /api/quizzes/:id
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.id)
       .select('-questions.options.isCorrect')
+      .populate('createdBy', 'name');
+
+    if (quiz) {
+      res.json(quiz);
+    } else {
+      res.status(404);
+      throw new Error('Quiz not found');
+    }
+  } catch (error) {
+    res.status(res.statusCode || 500).json({
+      message: error.message,
+      stack: process.env.NODE_ENV === 'production' ? null : error.stack,
+    });
+  }
+});
+
+// @desc    Get quiz by ID with correct answers (for quiz attempts)
+// @route   GET /api/quizzes/:id/attempt
+// @access  Private
+router.get('/:id/attempt', protect, async (req, res) => {
+  try {
+    const quiz = await Quiz.findById(req.params.id)
       .populate('createdBy', 'name');
 
     if (quiz) {

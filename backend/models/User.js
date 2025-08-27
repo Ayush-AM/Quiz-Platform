@@ -27,6 +27,28 @@ const userSchema = mongoose.Schema(
       enum: ['user', 'admin'],
       default: 'user',
     },
+    stats: {
+      completedQuizzes: {
+        type: Number,
+        default: 0
+      },
+      averageScore: {
+        type: Number,
+        default: 0
+      },
+      totalPoints: {
+        type: Number,
+        default: 0
+      },
+      ranking: {
+        type: Number,
+        default: 0
+      },
+      lastUpdated: {
+        type: Date,
+        default: Date.now
+      }
+    }
   },
   {
     timestamps: true,
