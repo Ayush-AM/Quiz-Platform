@@ -112,4 +112,23 @@ router.get('/profile', protect, async (req, res) => {
   }
 });
 
+// @desc    Test API connection
+// @route   GET /api/auth/test
+// @access  Public
+router.get('/test', async (req, res) => {
+  try {
+    res.json({
+      message: 'API connection successful',
+      timestamp: new Date().toISOString(),
+      server: 'Quiz Platform Backend',
+      version: '1.0.0'
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'API test failed',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
