@@ -33,7 +33,7 @@ export default function QuizAttempt() {
       
       try {
         setIsLoading(true);
-        const response = await fetch(`http://localhost:5000/api/quizzes/${id}/attempt`, {
+        const response = await fetch(`https://quiz-platform-dxx0.onrender.com/api/quizzes/${id}/attempt`, {
           headers: {
             'Authorization': `Bearer ${user.token}`,
             'Content-Type': 'application/json'

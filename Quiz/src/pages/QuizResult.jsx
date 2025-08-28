@@ -29,7 +29,7 @@ export default function QuizResult() {
       const fetchQuizData = async () => {
         try {
           setIsLoading(true);
-          const response = await fetch(`http://localhost:5000/api/quizzes/${location.state.results.quizId}/attempt`, {
+          const response = await fetch(`https://quiz-platform-dxx0.onrender.com/api/quizzes/${location.state.results.quizId}/attempt`, {
             headers: {
               'Authorization': `Bearer ${user.token}`,
               'Content-Type': 'application/json'
@@ -146,7 +146,7 @@ export default function QuizResult() {
           console.log('Submitting quiz result payload:', JSON.stringify(payload, null, 2));
           
           // Submit the quiz result to the backend
-          const response = await fetch('http://localhost:5000/api/results', {
+          const response = await fetch('https://quiz-platform-dxx0.onrender.com/api/results', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -270,7 +270,7 @@ export default function QuizResult() {
                   };
                   
                   // Submit the quiz result to the backend
-                  const response = await fetch('http://localhost:5000/api/results', {
+                  const response = await fetch('https://quiz-platform-dxx0.onrender.com/api/results', {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',

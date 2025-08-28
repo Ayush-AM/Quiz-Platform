@@ -30,7 +30,7 @@ export default function Dashboard() {
       try {
         setIsLoading(true);
         // Fetch stats from backend
-        const response = await fetch(`http://localhost:5000/api/results/stats/${user.id}`, {
+        const response = await fetch(`https://quiz-platform-dxx0.onrender.com/api/results/stats/${user.id}`, {
           headers: {
             'Authorization': `Bearer ${user.token}`,
             'Content-Type': 'application/json'
@@ -91,7 +91,7 @@ export default function Dashboard() {
       
       try {
         setIsLoading(true);
-        const response = await fetch('http://localhost:5000/api/quizzes', {
+        const response = await fetch('https://quiz-platform-dxx0.onrender.com/api/quizzes', {
           headers: {
             'Authorization': `Bearer ${user.token}`,
             'Content-Type': 'application/json'
