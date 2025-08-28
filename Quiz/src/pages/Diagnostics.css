@@ -1,0 +1,185 @@
+.diagnostics-container {
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.diagnostics-container h1 {
+  color: #2d3748;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.diagnostic-section {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.diagnostic-section h2 {
+  color: #4a5568;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.info-item label {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.info-item span {
+  color: #4a5568;
+}
+
+.status-good {
+  color: #38a169 !important;
+  font-weight: 600;
+}
+
+.status-bad {
+  color: #e53e3e !important;
+  font-weight: 600;
+}
+
+.issues-list {
+  background: #fed7d7;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.issue-item {
+  color: #9b2c2c;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.test-button, .diagnostic-button {
+  background: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-right: 10px;
+  margin-bottom: 10px;
+}
+
+.test-button:hover, .diagnostic-button:hover {
+  background: #3182ce;
+  transform: translateY(-2px);
+}
+
+.test-button:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.diagnostic-button.warning {
+  background: #ed8936;
+}
+
+.diagnostic-button.warning:hover {
+  background: #dd6b20;
+}
+
+.diagnostic-button.secondary {
+  background: #a0aec0;
+}
+
+.diagnostic-button.secondary:hover {
+  background: #718096;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.api-result {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid;
+}
+
+.api-result.success {
+  background: #f0fff4;
+  border-color: #9ae6b4;
+  color: #276749;
+}
+
+.api-result.error {
+  background: #fed7d7;
+  border-color: #fc8181;
+  color: #9b2c2c;
+}
+
+.api-result pre {
+  margin-top: 10px;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  overflow-x: auto;
+}
+
+.user-data {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+}
+
+.diagnostics-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 18px;
+  color: #4a5568;
+}
+
+@media (max-width: 768px) {
+  .diagnostics-container {
+    padding: 10px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+  }
+  
+  .diagnostic-button, .test-button {
+    width: 100%;
+    margin-right: 0;
+  }
+}

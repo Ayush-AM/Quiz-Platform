@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Platform Troubleshooting</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            background: #f5f7fa;
+            margin: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h1 { color: #2d3748; text-align: center; }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #4299e1;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .pass { background: #c6f6d5; color: #276749; }
+        .fail { background: #fed7d7; color: #9b2c2c; }
+        button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: 600;
+        }
+        button:hover { background: #3182ce; }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 14px;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+        }
+        @media (max-width: 600px) {
+            .info-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Quiz Platform Troubleshooting</h1>
+        
+        <div class="test-section">
+            <h3>Device Information</h3>
+            <div class="info-grid" id="deviceInfo">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>Compatibility Tests</h3>
+            <div id="testResults">
+                <!-- Will be populated by JavaScript -->
+            </div>
+            <button onclick="runAllTests()">Run All Tests</button>
+            <button onclick="clearAllData()">Clear All Data</button>
+            <button onclick="location.href='/login'">Go to Login</button>
+        </div>
+
+        <div class="test-section">
+            <h3>API Connection Test</h3>
+            <div id="apiTest">
+                <button onclick="testAPI()">Test API Connection</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Device information gathering
+        function getDeviceInfo() {
+            const info = {
+                'User Agent': navigator.userAgent,
+                'Platform': navigator.platform,
+                'Language': navigator.language,
+                'Online': navigator.onLine ? 'Yes' : 'No',
+                'Cookies Enabled': navigator.cookieEnabled ? 'Yes' : 'No',
+                'Screen Resolution': `${screen.width}x${screen.height}`,
+                'Viewport Size': `${window.innerWidth}x${window.innerHeight}`,
+                'Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone
+            };
+            return info;
+        }
+
+        function displayDeviceInfo() {
+            const info = getDeviceInfo();
+            const container = document.getElementById('deviceInfo');
+            container.innerHTML = '';
+            
+            Object.entries(info).forEach(([key, value]) => {
+                const item = document.createElement('div');
+                item.className = 'info-item';
+                item.innerHTML = `<strong>${key}:</strong> <span>${value}</span>`;
+                container.appendChild(item);
+            });
+        }
+
+        // Compatibility tests
+        function testLocalStorage() {
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                return { status: 'pass', message: 'LocalStorage: Working' };
+            } catch (e) {
+                return { status: 'fail', message: 'LocalStorage: ' + e.message };
+            }
+        }
+
+        function testSessionStorage() {
+            try {
+                sessionStorage.setItem('test', 'test');
+                sessionStorage.removeItem('test');
+                return { status: 'pass', message: 'SessionStorage: Working' };
+            } catch (e) {
+                return { status: 'fail', message: 'SessionStorage: ' + e.message };
+            }
+        }
+
+        function testJSON() {
+            try {
+                const obj = { test: 'value' };
+                const str = JSON.stringify(obj);
+                const parsed = JSON.parse(str);
+                return { status: 'pass', message: 'JSON: Working' };
+            } catch (e) {
+                return { status: 'fail', message: 'JSON: ' + e.message };
+            }
+        }
+
+        function testFetch() {
+            if (typeof fetch !== 'undefined') {
+                return { status: 'pass', message: 'Fetch API: Available' };
+            } else {
+                return { status: 'fail', message: 'Fetch API: Not available' };
+            }
+        }
+
+        function runAllTests() {
+            const tests = [testLocalStorage(), testSessionStorage(), testJSON(), testFetch()];
+            const container = document.getElementById('testResults');
+            container.innerHTML = '';
+
+            tests.forEach(test => {
+                const result = document.createElement('div');
+                result.className = `test-result ${test.status}`;
+                result.textContent = test.message;
+                container.appendChild(result);
+            });
+        }
+
+        async function testAPI() {
+            const container = document.getElementById('apiTest');
+            container.innerHTML = '<p>Testing API connection...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/test');
+                if (response.ok) {
+                    const data = await response.json();
+                    container.innerHTML = `
+                        <div class="test-result pass">✅ API Connection: Success</div>
+                        <pre style="background: #f0f0f0; padding: 10px; border-radius: 4px;">${JSON.stringify(data, null, 2)}</pre>
+                        <button onclick="testAPI()">Test Again</button>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="test-result fail">❌ API Connection: Failed (${response.status})</div>
+                        <button onclick="testAPI()">Test Again</button>
+                    `;
+                }
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="test-result fail">❌ API Connection: Error - ${error.message}</div>
+                    <button onclick="testAPI()">Test Again</button>
+                `;
+            }
+        }
+
+        function clearAllData() {
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                alert('All data cleared! Redirecting to login...');
+                location.href = '/login';
+            } catch (e) {
+                alert('Error clearing data: ' + e.message);
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            displayDeviceInfo();
+            runAllTests();
+        });
+    </script>
+</body>
+</html>

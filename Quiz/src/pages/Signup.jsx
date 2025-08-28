@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { processApiError, validateForm, logError } from '../utils/errorHandler';
 import ErrorBoundary from '../components/ErrorBoundary';
+import { getApiUrl } from '../config/api';
 import './Auth.css';
 
 export default function Signup() {
@@ -52,7 +53,7 @@ export default function Signup() {
       }
 
       // Make API call to backend
-      const response = await fetch('https://quiz-platform-dxx0.onrender.com/api/auth/register', {
+      const response = await fetch(getApiUrl('api/auth/register'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

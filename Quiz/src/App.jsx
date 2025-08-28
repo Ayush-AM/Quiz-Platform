@@ -5,6 +5,7 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import QuizAttempt from "./pages/QuizAttempt";
 import QuizResult from "./pages/QuizResult";
+import Diagnostics from "./pages/Diagnostics";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ErrorTest from "./components/ErrorTest";
 
@@ -58,8 +59,9 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* Error Test route */}
+      {/* Utility routes */}
       <Route path="/error-test" element={<ErrorTest />} />
+      <Route path="/diagnostics" element={<Diagnostics />} />
       
       {/* Redirect root to dashboard */}
       <Route path="/" element={<Navigate to="/dashboard" />} />
@@ -70,7 +72,7 @@ function AppRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <ErrorBoundary>
+      <ErrorBoundary showDetails={true}>
         <Router>
           <AppRoutes />
         </Router>

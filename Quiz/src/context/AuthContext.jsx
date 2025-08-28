@@ -9,16 +9,44 @@ export const AuthProvider = ({ children }) => {
 
   // Load user data from localStorage on mount
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
+    const loadUserData = async () => {
+      try {
+        // Check if localStorage is available
+        if (typeof(Storage) === "undefined") {
+          console.warn('LocalStorage is not supported on this device');
+          setIsLoading(false);
+          return;
+        }
+
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+          const userData = JSON.parse(savedUser);
+          
+          // Validate user data structure
+          if (userData && userData.id && userData.token) {
+            setUser(userData);
+          } else {
+            console.warn('Invalid user data in localStorage, clearing...');
+            localStorage.removeItem('user');
+          }
+        }
+      } catch (error) {
+        console.error('LocalStorage error detected:', error);
+        logError(error, 'AuthContext - loading user data');
+        
+        // Clear potentially corrupted localStorage data
+        try {
+          localStorage.removeItem('user');
+          console.log('Cleared potentially corrupted user data');
+        } catch (clearError) {
+          console.error('Could not clear localStorage:', clearError);
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      logError(error, 'AuthContext - loading user data');
-    } finally {
-      setIsLoading(false);
-    }
+    };
+
+    loadUserData();
   }, []);
 
   const login = (userData) => {

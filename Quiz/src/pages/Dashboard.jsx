@@ -2,7 +2,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { processApiError, logError } from '../utils/errorHandler';
+import { checkDeviceCompatibility, getDeviceInfo } from '../utils/deviceCompatibility';
 import ErrorBoundary from '../components/ErrorBoundary';
+import { getApiUrl } from '../config/api';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -20,6 +22,13 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
+    // Check device compatibility and log issues
+    const deviceInfo = getDeviceInfo();
+    if (deviceInfo.issues.length > 0) {
+      console.warn('Device compatibility issues detected:', deviceInfo.issues);
+      console.log('Full device info:', deviceInfo);
+    }
+
     // Check if user exists
     if (!user) {
       navigate('/login');
@@ -30,7 +39,7 @@ export default function Dashboard() {
       try {
         setIsLoading(true);
         // Fetch stats from backend
-        const response = await fetch(`https://quiz-platform-dxx0.onrender.com/api/results/stats/${user.id}`, {
+        const response = await fetch(getApiUrl(`api/results/stats/${user.id}`), {
           headers: {
             'Authorization': `Bearer ${user.token}`,
             'Content-Type': 'application/json'
@@ -91,7 +100,7 @@ export default function Dashboard() {
       
       try {
         setIsLoading(true);
-        const response = await fetch('https://quiz-platform-dxx0.onrender.com/api/quizzes', {
+        const response = await fetch(getApiUrl('api/quizzes'), {
           headers: {
             'Authorization': `Bearer ${user.token}`,
             'Content-Type': 'application/json'

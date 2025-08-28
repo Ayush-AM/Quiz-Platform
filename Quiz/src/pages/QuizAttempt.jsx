@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { processApiError, logError } from '../utils/errorHandler';
 import ErrorBoundary from '../components/ErrorBoundary';
+import { getApiUrl } from '../config/api';
 import { quizData } from '../data/quizData';
 import './QuizAttempt.css';
 
@@ -33,7 +34,7 @@ export default function QuizAttempt() {
       
       try {
         setIsLoading(true);
-        const response = await fetch(`https://quiz-platform-dxx0.onrender.com/api/quizzes/${id}/attempt`, {
+        const response = await fetch(getApiUrl(`api/quizzes/${id}/attempt`), {
           headers: {
             'Authorization': `Bearer ${user.token}`,
             'Content-Type': 'application/json'
