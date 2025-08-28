@@ -39,4 +39,16 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 API Health Check: http://localhost:${PORT}/`);
+  console.log(`📊 Database Status: Connected to MongoDB`);
+  console.log('\n🔍 Available Routes:');
+  console.log(`  GET  / - Health check`);
+  console.log(`  POST /api/auth/register - User registration`);
+  console.log(`  POST /api/auth/login - User login`);
+  console.log(`  GET  /api/auth/test - API connection test`);
+  console.log(`  GET  /api/quizzes - Get all quizzes`);
+  console.log(`  POST /api/results - Submit quiz result`);
+});
