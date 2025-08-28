@@ -4,12 +4,14 @@
   "description": "A full-stack quiz platform with React frontend and Node.js backend",
   "private": true,
   "scripts": {
+    "start": "node server.js",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd Quiz && npm run dev",
     "build:frontend": "cd Quiz && npm run build",
     "install:backend": "cd backend && npm install",
     "install:frontend": "cd Quiz && npm install",
-    "install:all": "npm run install:backend && npm run install:frontend"
+    "install:all": "npm run install:backend && npm run install:frontend",
+    "postinstall": "cd backend && npm install"
   },
   "author": "",
   "license": "ISC"
